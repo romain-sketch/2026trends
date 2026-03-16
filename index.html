@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 Data & AI Predictions — Sifflet</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>
 <style>
   :root {
     --razzmatazz: #E5004F;
@@ -52,7 +51,6 @@
 
   /* CONTENT */
   .content-wrap { max-width: 860px; margin: 0 auto; padding: 64px 48px 120px; }
-
   .intro-block { border-left: 3px solid var(--razzmatazz); padding-left: 24px; margin-bottom: 64px; }
   .intro-block p { font-size: 17px; line-height: 1.75; color: #3A3A5C; font-weight: 300; }
   .intro-block p + p { margin-top: 16px; }
@@ -110,7 +108,6 @@
   .btn-submit:hover { background: #c9003f; transform: translateY(-1px); }
   .btn-submit:active { transform: translateY(0); }
   .form-privacy { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 12px; line-height: 1.5; }
-  #hs-form-container { margin-top: 16px; display: none; }
 
   /* UNLOCKED */
   .unlocked-content { display: none; }
@@ -314,7 +311,6 @@
         <div class="form-field"><label for="company">Company</label><input type="text" id="company" placeholder="Acme Corp"></div>
       </div>
       <button class="btn-submit" onclick="unlockContent()">Unlock the full report →</button>
-      <div id="hs-form-container"></div>
       <p class="form-privacy">No spam. One newsletter per month. Unsubscribe anytime.</p>
     </div>
   </div>
@@ -456,7 +452,7 @@
       <div style="font-family:'DM Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--razzmatazz); margin-bottom:16px;">The challenge Salma left every attendee with</div>
       <p style="font-family:'Fraunces',serif; font-size:clamp(18px,2.5vw,26px); color:#fff; line-height:1.4; font-style:italic; font-weight:300; max-width:580px; margin:0 auto 24px;">"When something breaks in your data — how long until the business feels it? How long until engineers understand the impact, quantify it, and solve it?"</p>
       <p style="font-size:14px; color:rgba(255,255,255,0.6); max-width:480px; margin:0 auto 32px; line-height:1.6;">If the answer is hours or days, you don't have a tooling problem. You have a context problem.</p>
-      <a href="https://www.siffletdata.com/contact-us" target="_blank" rel="noopener" style="display:inline-block; background:var(--razzmatazz); color:#fff; text-decoration:none; padding:14px 32px; border-radius:3px; font-family:'Sora',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.02em;">See how Sifflet solves it →</a>
+      <a href="https://www.siffletdata.com" target="_blank" rel="noopener" style="display:inline-block; background:var(--razzmatazz); color:#fff; text-decoration:none; padding:14px 32px; border-radius:3px; font-family:'Sora',sans-serif; font-weight:600; font-size:14px; letter-spacing:0.02em;">See how Sifflet solves it →</a>
       <p style="font-size:12px; color:rgba(255,255,255,0.35); margin-top:16px;">Or reach Salma directly on LinkedIn</p>
     </div>
 
@@ -493,49 +489,39 @@
       return;
     }
 
-    // Hide the gate
+    // Hide gate, reveal content
     document.getElementById('gateWrapper').style.display = 'none';
-
-    // Show unlocked content
     var ul = document.getElementById('unlockedContent');
     ul.classList.add('visible');
     setTimeout(function() {
       ul.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
 
-    // Submit to HubSpot
-    if (typeof hbspt !== 'undefined') {
-      document.getElementById('hs-form-container').style.display = 'block';
-      hbspt.forms.create({
-        portalId: "24383351",
-        formId: "58277dc2-0a5f-46d8-ab03-1a9bc2526446",
-        region: "na1",
-        target: "#hs-form-container",
-        onFormReady: function(form) {
-          // Pre-fill fields from our custom form
-          var fields = {
-            firstname: document.getElementById('fname').value,
-            lastname:  document.getElementById('lname').value,
-            email:     email,
-            company:   document.getElementById('company').value
-          };
-          Object.keys(fields).forEach(function(name) {
-            var input = form.querySelector('input[name="' + name + '"]');
-            if (input) {
-              input.value = fields[name];
-              input.dispatchEvent(new Event('input', { bubbles: true }));
-              input.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-          });
-          // Auto-submit the HubSpot form
-          var submitBtn = form.querySelector('input[type="submit"], button[type="submit"]');
-          if (submitBtn) { submitBtn.click(); }
-        },
-        onFormSubmitted: function() {
-          document.getElementById('hs-form-container').style.display = 'none';
-        }
-      });
-    }
+    // Submit directly to HubSpot Forms API
+    var payload = {
+      fields: [
+        { name: 'firstname', value: document.getElementById('fname').value.trim() },
+        { name: 'lastname',  value: document.getElementById('lname').value.trim() },
+        { name: 'email',     value: email },
+        { name: 'company',   value: document.getElementById('company').value.trim() }
+      ],
+      context: {
+        pageUri:  window.location.href,
+        pageName: document.title
+      }
+    };
+
+    fetch('https://api.hsforms.com/submissions/v3/integration/submit/24383351/58277dc2-0a5f-46d8-ab03-1a9bc2526446', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    })
+    .then(function(res) {
+      console.log('HubSpot submission status:', res.status);
+    })
+    .catch(function(err) {
+      console.error('HubSpot submission error:', err);
+    });
   }
 
   document.addEventListener('keydown', function(e) {
