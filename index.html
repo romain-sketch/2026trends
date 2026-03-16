@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 Data & AI Predictions — Sifflet</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>
 <style>
   :root {
     --razzmatazz: #E5004F;
@@ -75,7 +76,6 @@
   .reading-link-type { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: var(--dark-blue); padding: 2px 7px; border-radius: 2px; flex-shrink: 0; line-height: 1.8; }
   .reading-link-type.guide { background: var(--ocean); }
   .reading-link-type.checklist { background: #4C3F9B; }
-  .reading-link-type.product { background: #1A6B3C; }
   .reading-link-title { font-size: 13.5px; color: var(--ocean); font-weight: 500; line-height: 1.4; text-decoration: underline; text-decoration-color: rgba(0,112,224,0.25); text-underline-offset: 2px; transition: text-decoration-color 0.2s; }
   .reading-link:hover .reading-link-title { text-decoration-color: var(--ocean); }
 
@@ -110,7 +110,7 @@
   .btn-submit:hover { background: #c9003f; transform: translateY(-1px); }
   .btn-submit:active { transform: translateY(0); }
   .form-privacy { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 12px; line-height: 1.5; }
-  <div id="hs-form-container" style="margin-top:16px;"></div>
+  #hs-form-container { margin-top: 16px; display: none; }
 
   /* UNLOCKED */
   .unlocked-content { display: none; }
@@ -142,7 +142,6 @@
     footer { padding: 40px 20px; }
   }
 </style>
-<script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>
 </head>
 <body>
 
@@ -315,6 +314,7 @@
         <div class="form-field"><label for="company">Company</label><input type="text" id="company" placeholder="Acme Corp"></div>
       </div>
       <button class="btn-submit" onclick="unlockContent()">Unlock the full report →</button>
+      <div id="hs-form-container"></div>
       <p class="form-privacy">No spam. One newsletter per month. Unsubscribe anytime.</p>
     </div>
   </div>
@@ -484,35 +484,66 @@
 </footer>
 
 <script>
-function unlockContent() {
-  const email = document.getElementById('email').value.trim();
-  if (!email || !email.includes('@')) {
-    document.getElementById('email').style.borderColor = 'var(--razzmatazz)';
-    document.getElementById('email').focus();
-    return;
+  function unlockContent() {
+    var email = document.getElementById('email').value.trim();
+
+    if (!email || !email.includes('@')) {
+      document.getElementById('email').style.borderColor = 'var(--razzmatazz)';
+      document.getElementById('email').focus();
+      return;
+    }
+
+    // Hide the gate
+    document.getElementById('gateWrapper').style.display = 'none';
+
+    // Show unlocked content
+    var ul = document.getElementById('unlockedContent');
+    ul.classList.add('visible');
+    setTimeout(function() {
+      ul.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+
+    // Submit to HubSpot
+    if (typeof hbspt !== 'undefined') {
+      document.getElementById('hs-form-container').style.display = 'block';
+      hbspt.forms.create({
+        portalId: "24383351",
+        formId: "58277dc2-0a5f-46d8-ab03-1a9bc2526446",
+        region: "na1",
+        target: "#hs-form-container",
+        onFormReady: function(form) {
+          // Pre-fill fields from our custom form
+          var fields = {
+            firstname: document.getElementById('fname').value,
+            lastname:  document.getElementById('lname').value,
+            email:     email,
+            company:   document.getElementById('company').value
+          };
+          Object.keys(fields).forEach(function(name) {
+            var input = form.querySelector('input[name="' + name + '"]');
+            if (input) {
+              input.value = fields[name];
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          });
+          // Auto-submit the HubSpot form
+          var submitBtn = form.querySelector('input[type="submit"], button[type="submit"]');
+          if (submitBtn) { submitBtn.click(); }
+        },
+        onFormSubmitted: function() {
+          document.getElementById('hs-form-container').style.display = 'none';
+        }
+      });
+    }
   }
-  document.getElementById('gateWrapper').style.display = 'none';
-  const ul = document.getElementById('unlockedContent');
-  ul.classList.add('visible');
-  setTimeout(() => { ul.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
-  // Wire to HubSpot / your form endpoint here
-  hbspt.forms.create({
-  portalId: "24383351",
-  formId: "58277dc2-0a5f-46d8-ab03-1a9bc2526446",
-  region: "na1",
-  target: "#hs-form-container"
-});
-    fname: document.getElementById('fname').value,
-    lname: document.getElementById('lname').value,
-    email: email,
-    company: document.getElementById('company').value
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && ['email', 'company', 'fname', 'lname'].includes(document.activeElement.id)) {
+      unlockContent();
+    }
   });
-}
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && ['email','company','fname','lname'].includes(document.activeElement.id)) {
-    unlockContent();
-  }
-});
 </script>
+
 </body>
 </html>
